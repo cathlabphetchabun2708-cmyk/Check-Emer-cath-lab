@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>เช็คอุปกรณ์ฉุกเฉิน</title>
+  <style>
+    :root {
+      /* 60 — ครีม (พื้นหลังหลัก) */
+      --cream: #FAF6EC;
+      --cream-deep: #F1E9D8;
+      --surface: #FFFFFF;
+      /* 30 — ฟ้า (โครงสร้าง/สถานะปกติ) */
+      --blue-900: #1D3E4E;
+      --blue-700: #2C5F79;
+      --blue-500: #3F7B96;
+      --blue-100: #E4EFF3;
+      /* 10 — ส้ม (จุดเน้น/คำเตือน) */
+      --orange-700: #B5601C;
+      --orange-600: #D97B29;
+      --orange-100: #FBEBD9;
+      /* กลาง */
+      --ink: #26302E;
+      --ink-muted: #6B7A80;
+      --border: #E3DCC9;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Sarabun', 'Segoe UI', sans-serif;
+      background: var(--cream);
+      margin: 0;
+      padding: 0 0 32px;
+      color: var(--ink);
+    }
+    .app-header {
+      background: linear-gradient(135deg, var(--blue-900), var(--blue-700));
+      border-bottom: 3px solid var(--orange-600);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .app-header img.logo {
+      height: 46px;
+      width: 46px;
+      object-fit: contain;
+      background: var(--surface);
+      border-radius: 10px;
+      padding: 4px;
+      flex-shrink: 0;
+    }
+    .app-header .titles { min-width: 0; }
+    .app-header .org-name {
+      color: var(--cream);
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0.92;
+      margin: 0 0 2px;
+      overflow-wrap: break-word;
+    }
+    .app-header h1 {
+      color: #fff;
+      font-size: 19px;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: 0.2px;
+    }
+    .container { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 2px rgba(29, 62, 78, 0.06);
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--blue-900);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 6px;
+    }
+    select, input[type=text], input[type=date] {
+      width: 100%;
+      padding: 11px 12px;
+      font-size: 16px;
+      font-family: inherit;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 14px;
+      background: var(--surface);
+      color: var(--ink);
+    }
+    select:focus, input:focus {
+      outline: none;
+      border-color: var(--blue-500);
+      box-shadow: 0 0 0 3px var(--blue-100);
+    }
+    .items-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .items-header h3 { margin: 0; font-size: 15px; color: var(--blue-900); }
+    button.mark-all {
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--blue-700);
+      background: var(--blue-100);
+      border: 1px solid var(--blue-100);
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    button.mark-all:hover { background: #d7e7ee; }
+    .item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--cream-deep);
+      gap: 8px;
+    }
+    .item-row:last-child { border-bottom: none; }
+    .item-name { flex: 1; font-size: 15px; }
+    .item-required { font-size: 12px; color: var(--ink-muted); margin-left: 8px; }
+    .item-ok-toggle {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--blue-700);
+      white-space: nowrap;
+    }
+    .item-ok-toggle input { width: 18px; height: 18px; accent-color: var(--blue-700); }
+    .item-qty {
+      width: 70px;
+      padding: 8px;
+      font-size: 16px;
+      font-family: inherit;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      text-align: center;
+      color: var(--ink);
+    }
+    .item-qty.short { border-color: var(--orange-600); background: var(--orange-100); color: var(--orange-700); font-weight: 700; }
+    .item-qty:disabled { background: var(--blue-100); color: var(--blue-700); border-color: var(--blue-100); font-weight: 700; }
+    button.submit {
+      width: 100%;
+      padding: 15px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      background: var(--orange-600);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      letter-spacing: 0.2px;
+      box-shadow: 0 2px 6px rgba(217, 123, 41, 0.35);
+    }
+    button.submit:hover:not(:disabled) { background: var(--orange-700); }
+    button.submit:disabled { background: #c9c2b0; box-shadow: none; cursor: default; }
+    .status-banner {
+      padding: 13px 14px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      font-weight: 600;
+      font-size: 14px;
+      display: none;
+      border: 1px solid transparent;
+    }
+    .status-banner.ok { background: var(--blue-100); color: var(--blue-900); border-color: #cfe1e8; display: block; }
+    .status-banner.warn { background: var(--orange-100); color: var(--orange-700); border-color: #f0d3ac; display: block; }
+    .hint { font-size: 12px; color: var(--ink-muted); margin-top: -8px; margin-bottom: 14px; }
+    .loading { text-align: center; color: var(--ink-muted); padding: 24px; font-size: 14px; }
+    .history-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--cream-deep);
+      cursor: pointer;
+      font-size: 14px;
+      gap: 10px;
+    }
+    .history-summary:last-child { border-bottom: none; }
+    .history-meta { color: var(--ink-muted); font-size: 12px; margin-top: 2px; }
+    .badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .badge.ok { background: var(--blue-100); color: var(--blue-900); }
+    .badge.warn { background: var(--orange-100); color: var(--orange-700); }
+    .badge.info { background: var(--cream-deep); color: var(--ink-muted); }
+    .history-detail {
+      display: none;
+      padding: 4px 0 14px;
+      font-size: 13px;
+    }
+    .history-detail.open { display: block; }
+    .history-detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 1px dashed var(--cream-deep);
+    }
+    .history-detail-row.short { color: var(--orange-700); font-weight: 700; }
+    .history-empty { color: var(--ink-muted); font-size: 13px; padding: 8px 0; }
+    a { color: var(--blue-700); }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <img class="logo" src="logo.png" alt="โลโก้โรงพยาบาล" onerror="this.style.display='none'" />
+    <div class="titles">
+      <p class="org-name">งานการพยาบาลผู้ป่วยหนัก โรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน</p>
+      <h1>เช็คอุปกรณ์/ยา ฉุกเฉิน</h1>
+    </div>
+  </header>
+
+  <div class="container">
+
+  <div id="resultBanner" class="status-banner"></div>
+
+  <div class="card">
+    <label for="cartSelect">เลือกคัน/จุดที่เช็ค</label>
+    <select id="cartSelect"></select>
+
+    <label for="dateInput">วันที่ตรวจ</label>
+    <input type="date" id="dateInput" />
+    <div class="hint">กรอกเองทุกครั้ง เผื่อลงบันทึกย้อนหลัง</div>
+
+    <label for="shiftSelect">เวร</label>
+    <select id="shiftSelect">
+      <option value="">-- เลือกเวร --</option>
+      <option value="เช้า">เช้า</option>
+      <option value="บ่าย">บ่าย</option>
+      <option value="ดึก">ดึก</option>
+    </select>
+
+    <label for="checkerSelect">ผู้บันทึก</label>
+    <select id="checkerSelect">
+      <option value="">-- เลือกผู้บันทึก --</option>
+    </select>
+  </div>
+
+  <div id="itemsCard" class="card">
+    <div class="loading">กำลังโหลด...</div>
+  </div>
+
+  <button class="submit" id="submitBtn" disabled>บันทึกและแจ้งเตือน</button>
+
+  <div class="card">
+    <div class="items-header">
+      <h3>ประวัติการเช็ค / สุ่มตรวจสอบย้อนหลัง</h3>
+      <button type="button" class="mark-all" id="historyToggleBtn">แสดงประวัติ</button>
+    </div>
+    <div id="historyPanel" style="display:none;">
+      <label for="historyCartSelect">คัน/จุด</label>
+      <select id="historyCartSelect">
+        <option value="">ทุกคัน</option>
+      </select>
+
+      <label for="historyFrom">ตั้งแต่วันที่</label>
+      <input type="date" id="historyFrom" />
+
+      <label for="historyTo">ถึงวันที่</label>
+      <input type="date" id="historyTo" />
+
+      <label for="historyStatus">สถานะ</label>
+      <select id="historyStatus">
+        <option value="">ทั้งหมด</option>
+        <option value="ครบถ้วน">ครบถ้วน</option>
+        <option value="ไม่ครบ">ไม่ครบ</option>
+        <option value="บันทึกแล้ว">บันทึกแล้ว (ตู้เย็นยา)</option>
+      </select>
+
+      <label for="historyChecker">ผู้บันทึก</label>
+      <select id="historyChecker">
+        <option value="">ทุกคน</option>
+      </select>
+
+      <button type="button" class="mark-all" id="historySearchBtn" style="width:100%; margin-bottom:14px;">ค้นหา</button>
+
+      <div id="historyList"></div>
+      <button type="button" class="mark-all" id="historyMoreBtn" style="width:100%; display:none; margin-top:8px;">โหลดเพิ่มเติม</button>
+
+      <div class="hint" style="margin-top:10px;">
+        ต้องการดู/กรอง/export ข้อมูลดิบทั้งหมด (เช่นทำรายงานสุ่มตรวจให้คะแนน) —
+        <a href="#" id="historySheetLink" target="_blank">เปิดดูในชีต Google Sheet</a>
+      </div>
+    </div>
+  </div>
+
+  </div>
+
+  <script>
+    // ★★★ แก้บรรทัดนี้เป็น Web app URL จริงจาก Apps Script (Deploy > Manage deployments) ★★★
+    var API_BASE = "https://script.google.com/macros/s/AKfycbztuO1EhUQ0GcI8mbn2zhDcXiJccXV2vzchoBa4SYsbfq9aFwMVhGNpVsHgL5MWiEt4/exec";
+
+    function apiGet(action, params) {
+      var url = API_BASE + '?action=' + encodeURIComponent(action);
+      params = params || {};
+      Object.keys(params).forEach(function (k) {
+        var v = params[k];
+        if (v !== undefined && v !== null && v !== '') {
+          url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(v);
+        }
+      });
+      return fetch(url)
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data && data.error) throw new Error(data.error);
+          return data;
+        });
+    }
+
+    // ไม่ตั้ง header เอง (ปล่อยเป็น text/plain ค่า default ของ fetch) เพื่อเลี่ยง CORS preflight ที่ Apps Script ตอบไม่ได้
+    function apiPost(payload) {
+      return fetch(API_BASE, { method: 'POST', body: JSON.stringify(payload) })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data && data.error) throw new Error(data.error);
+          return data;
+        });
+    }
+
+    var INITIAL_CART_ID = new URLSearchParams(location.search).get('cart') || '';
+    var state = { carts: [], items: [], historyOpen: false, historyLimit: 30 };
+
+    function renderCartOptions() {
+      var sel = document.getElementById('cartSelect');
+      var historySel = document.getElementById('historyCartSelect');
+      sel.innerHTML = '';
+      state.carts.forEach(function (c) {
+        var opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        sel.appendChild(opt);
+
+        var histOpt = document.createElement('option');
+        histOpt.value = c.id;
+        histOpt.textContent = c.name;
+        historySel.appendChild(histOpt);
+      });
+      if (INITIAL_CART_ID && state.carts.some(function (c) { return c.id === INITIAL_CART_ID; })) {
+        sel.value = INITIAL_CART_ID;
+        historySel.value = INITIAL_CART_ID;
+      }
+    }
+
+    function renderStaffOptions(staff) {
+      var sel = document.getElementById('checkerSelect');
+      var historySel = document.getElementById('historyChecker');
+      staff.forEach(function (name) {
+        var histOpt = document.createElement('option');
+        histOpt.value = name;
+        histOpt.textContent = name;
+        historySel.appendChild(histOpt);
+
+        var opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        sel.appendChild(opt);
+      });
+    }
+
+    function renderItems(items, mode) {
+      var card = document.getElementById('itemsCard');
+      card.innerHTML = '';
+
+      if (mode === 'checklist') {
+        var header = document.createElement('div');
+        header.className = 'items-header';
+        var h3 = document.createElement('h3');
+        h3.textContent = 'รายการ (' + items.length + ')';
+        var markAllBtn = document.createElement('button');
+        markAllBtn.type = 'button';
+        markAllBtn.className = 'mark-all';
+        markAllBtn.textContent = '✅ ครบทั้งหมด';
+        markAllBtn.addEventListener('click', function () {
+          document.querySelectorAll('.item-ok-toggle input').forEach(function (cb) {
+            cb.checked = true;
+            cb.dispatchEvent(new Event('change'));
+          });
+        });
+        header.appendChild(h3);
+        header.appendChild(markAllBtn);
+        card.appendChild(header);
+      }
+
+      items.forEach(function (it) {
+        var row = document.createElement('div');
+        row.className = 'item-row';
+
+        var name = document.createElement('div');
+        name.className = 'item-name';
+        name.textContent = it.name;
+        if (mode === 'checklist') {
+          var req = document.createElement('span');
+          req.className = 'item-required';
+          req.textContent = '(ต้องมี ' + it.requiredQty + ')';
+          name.appendChild(req);
+        }
+
+        var input = document.createElement('input');
+        input.type = 'number';
+        input.min = '0';
+        input.className = 'item-qty';
+        input.dataset.itemId = it.id;
+        input.dataset.required = it.requiredQty;
+        input.value = '';
+        input.addEventListener('input', function () {
+          if (mode === 'checklist') {
+            var required = Number(input.dataset.required);
+            var val = Number(input.value);
+            input.classList.toggle('short', input.value !== '' && val < required);
+          }
+        });
+
+        row.appendChild(name);
+
+        if (mode === 'checklist') {
+          var toggleWrap = document.createElement('label');
+          toggleWrap.className = 'item-ok-toggle';
+          var checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.addEventListener('change', function () {
+            if (checkbox.checked) {
+              input.value = it.requiredQty;
+              input.disabled = true;
+              input.classList.remove('short');
+            } else {
+              input.disabled = false;
+              input.value = '';
+            }
+          });
+          toggleWrap.appendChild(checkbox);
+          toggleWrap.appendChild(document.createTextNode('ครบ'));
+          row.appendChild(toggleWrap);
+        }
+
+        row.appendChild(input);
+        card.appendChild(row);
+      });
+      document.getElementById('submitBtn').disabled = false;
+    }
+
+    function loadItemsForSelectedCart() {
+      var cartId = document.getElementById('cartSelect').value;
+      document.getElementById('itemsCard').innerHTML = '<div class="loading">กำลังโหลด...</div>';
+      document.getElementById('submitBtn').disabled = true;
+      apiGet('items', { cartId: cartId })
+        .then(function (items) {
+          state.items = items;
+          var cart = state.carts.filter(function (c) { return c.id === cartId; })[0];
+          renderItems(items, cart ? cart.mode : 'checklist');
+        })
+        .catch(showError);
+      if (state.historyOpen) {
+        document.getElementById('historyCartSelect').value = cartId;
+        state.historyLimit = 30;
+        loadHistory();
+      }
+    }
+
+    function loadHistory() {
+      var list = document.getElementById('historyList');
+      list.innerHTML = '<div class="loading">กำลังโหลด...</div>';
+      document.getElementById('historyMoreBtn').style.display = 'none';
+      var filter = {
+        cartId: document.getElementById('historyCartSelect').value,
+        fromDate: document.getElementById('historyFrom').value,
+        toDate: document.getElementById('historyTo').value,
+        status: document.getElementById('historyStatus').value,
+        checker: document.getElementById('historyChecker').value,
+        limit: state.historyLimit,
+      };
+      apiGet('history', filter)
+        .then(function (result) {
+          renderHistory(result.submissions);
+          document.getElementById('historyMoreBtn').style.display =
+            result.totalMatched > result.submissions.length ? 'block' : 'none';
+        })
+        .catch(showError);
+    }
+
+    function renderHistory(submissions) {
+      var list = document.getElementById('historyList');
+      list.innerHTML = '';
+      if (!submissions || submissions.length === 0) {
+        list.innerHTML = '<div class="history-empty">ไม่พบประวัติที่ตรงเงื่อนไข</div>';
+        return;
+      }
+      submissions.forEach(function (s) {
+        var summary = document.createElement('div');
+        summary.className = 'history-summary';
+
+        var left = document.createElement('div');
+        left.innerHTML = s.timestamp + ' &middot; เวร' + s.shift +
+          '<div class="history-meta">' + s.cartName + ' &middot; ' + s.checker + '</div>';
+
+        var badge = document.createElement('span');
+        var badgeClass = s.overallStatus === 'ครบถ้วน' ? 'ok' : (s.overallStatus === 'ไม่ครบ' ? 'warn' : 'info');
+        badge.className = 'badge ' + badgeClass;
+        badge.textContent = s.overallStatus;
+
+        summary.appendChild(left);
+        summary.appendChild(badge);
+
+        var detail = document.createElement('div');
+        detail.className = 'history-detail';
+        s.items.forEach(function (it) {
+          var row = document.createElement('div');
+          row.className = 'history-detail-row' + (it.shortage ? ' short' : '');
+          var label = document.createElement('span');
+          label.textContent = it.name;
+          var val = document.createElement('span');
+          val.textContent = it.requiredQty > 0 ? (it.foundQty + ' / ' + it.requiredQty) : String(it.foundQty);
+          row.appendChild(label);
+          row.appendChild(val);
+          detail.appendChild(row);
+        });
+
+        summary.addEventListener('click', function () {
+          detail.classList.toggle('open');
+        });
+
+        list.appendChild(summary);
+        list.appendChild(detail);
+      });
+    }
+
+    function showError(err) {
+      var banner = document.getElementById('resultBanner');
+      banner.className = 'status-banner warn';
+      banner.textContent = 'เกิดข้อผิดพลาด: ' + (err && err.message ? err.message : err);
+    }
+
+    function submitForm() {
+      var cartId = document.getElementById('cartSelect').value;
+      var shift = document.getElementById('shiftSelect').value;
+      var checker = document.getElementById('checkerSelect').value;
+      var checkDate = document.getElementById('dateInput').value;
+      if (!checkDate) {
+        showError({ message: 'กรุณาเลือกวันที่ตรวจ' });
+        return;
+      }
+      if (!shift) {
+        showError({ message: 'กรุณาเลือกเวร' });
+        return;
+      }
+      if (!checker) {
+        showError({ message: 'กรุณาเลือกผู้บันทึก' });
+        return;
+      }
+
+      var qtyInputs = document.querySelectorAll('.item-qty');
+      var itemQuantities = {};
+      qtyInputs.forEach(function (input) {
+        itemQuantities[input.dataset.itemId] = input.value === '' ? 0 : Number(input.value);
+      });
+
+      var btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'กำลังบันทึก...';
+
+      apiPost({
+        cartId: cartId,
+        shift: shift,
+        checker: checker,
+        checkDate: checkDate,
+        itemQuantities: itemQuantities,
+      })
+        .then(function (result) {
+          btn.disabled = false;
+          btn.textContent = 'บันทึกและแจ้งเตือน';
+          var banner = document.getElementById('resultBanner');
+          if (result.overallStatus === 'ไม่ครบ') {
+            banner.className = 'status-banner warn';
+            banner.textContent = '⚠️ บันทึกสำเร็จ แต่พบรายการไม่ครบ ' + result.shortItems.length + ' รายการ (แจ้งเตือน LINE แล้ว)';
+          } else {
+            banner.className = 'status-banner ok';
+            banner.textContent = '✅ บันทึกสำเร็จ (แจ้งเตือน LINE แล้ว)';
+          }
+          qtyInputs.forEach(function (input) {
+            input.value = '';
+            input.disabled = false;
+            input.classList.remove('short');
+          });
+          document.querySelectorAll('.item-ok-toggle input').forEach(function (cb) { cb.checked = false; });
+          document.getElementById('dateInput').value = '';
+          document.getElementById('shiftSelect').value = '';
+          document.getElementById('checkerSelect').value = '';
+          if (state.historyOpen) loadHistory();
+        })
+        .catch(function (err) {
+          btn.disabled = false;
+          btn.textContent = 'บันทึกและแจ้งเตือน';
+          showError(err);
+        });
+    }
+
+    document.getElementById('cartSelect').addEventListener('change', loadItemsForSelectedCart);
+    document.getElementById('submitBtn').addEventListener('click', submitForm);
+    document.getElementById('historyToggleBtn').addEventListener('click', function () {
+      state.historyOpen = !state.historyOpen;
+      var panel = document.getElementById('historyPanel');
+      var btn = document.getElementById('historyToggleBtn');
+      panel.style.display = state.historyOpen ? 'block' : 'none';
+      btn.textContent = state.historyOpen ? 'ซ่อนประวัติ' : 'แสดงประวัติ';
+      if (state.historyOpen) {
+        document.getElementById('historyCartSelect').value = document.getElementById('cartSelect').value;
+        state.historyLimit = 30;
+        loadHistory();
+      }
+    });
+    document.getElementById('historySearchBtn').addEventListener('click', function () {
+      state.historyLimit = 30;
+      loadHistory();
+    });
+    document.getElementById('historyMoreBtn').addEventListener('click', function () {
+      state.historyLimit += 30;
+      loadHistory();
+    });
+
+    apiGet('logSheetUrl')
+      .then(function (data) { document.getElementById('historySheetLink').href = data.url; })
+      .catch(function () {});
+
+    apiGet('initialData')
+      .then(function (data) {
+        state.carts = data.carts;
+        renderCartOptions();
+        renderStaffOptions(data.staff || []);
+        loadItemsForSelectedCart();
+      })
+      .catch(showError);
+  </script>
+</body>
+</html>
